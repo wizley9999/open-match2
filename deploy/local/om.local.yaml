@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-match-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-match-deployment
+  template:
+    metadata:
+      labels:
+        app: open-match-deployment
+    spec:
+      containers:
+        - image: us-docker.pkg.dev/open-match-public-images/open-match2/om-core
+          imagePullPolicy: IfNotPresent
+          name: om-core
+          ports:
+            - containerPort: 50581
+          env:
+            - name: OM_LOGGING_LEVEL
+              value: info
+            - name: OM_REDIS_WRITE_HOST
+              value: redis.default.svc.cluster.local
+            - name: OM_REDIS_READ_HOST
+              value: redis.default.svc.cluster.local
+            - name: OM_OTEL_SIDECAR
+              value: "false"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-match-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: open-match-deployment
+  ports:
+    - name: grpc
+      port: 18080
+      targetPort: 50581
+      protocol: TCP
